@@ -71,8 +71,11 @@
 #include "psx.h"
 #include "cdc.h"
 #include "spu.h"
+#include "mednafen/driver.h"
+#include "../drivers/help.h"
 
 using namespace CDUtility;
+
 
 namespace MDFN_IEN_PSX
 {
@@ -293,7 +296,7 @@ void PS_CDC::StateAction(StateMem *sm, const unsigned load, const bool data_only
 
 
   SFVAR(FilterFile),
-  SFVAR(FilterChan),
+
 
   SFVAR(PendingCommand),
   SFVAR(PendingCommandPhase),
@@ -1109,13 +1112,31 @@ void PS_CDC::HandlePlayRead(void)
  SectorPipe_Pos = (SectorPipe_Pos + 1) % SectorPipe_Count;
  SectorPipe_In++;
 
- PSRCounter += 33868800 / (75 * ((Mode & MODE_SPEED) ? 2 : 1));
+ //PSRCounter += 33868800 / (75 * ((Mode & MODE_SPEED) ? 2 : 1));
+ 
+ PSRCounter = 8064;
+
+ //Brought from beetle
+  PSRCounter = 8064;
+     PSRCounter = 33868800 / (75 * 14);
+     if (Mode & MODE_SPEED){
+      if(Mode & (MODE_CDDA | MODE_STRSND)){
+       Change_speed(1);
+       PSRCounter = 33868800 / (75*2); 
+      }
+      else{
+       //PSRCounter = 8064;
+       PSRCounter = 33868800 / (75 * 14);
+   }
+  }
+
 
  if(DriveStatus == DS_PLAYING)
  {
   // FIXME: What's the real fast-forward and backward speed?
-  if(Forward)
+  if(Forward){
    CurSector += 12;
+ }
   else if(Backward)
   {
    CurSector -= 12;
@@ -1229,13 +1250,45 @@ pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
      ReportStartupDelay = 24000000;
 
      PSRCounter = 33868800 / (75 * ((Mode & MODE_SPEED) ? 2 : 1));
+     //MDFN_Notify(MDFN_NOTICE_STATUS, _("SEEKING"));
     }
     else if(DriveStatus == DS_SEEKING_LOGICAL)
     {
      CurSector = SeekTarget;
-
+     
+     MDFN_Notify(MDFN_NOTICE_STATUS, _("Loading"));
+     Change_speed(4);
+     
      HoldLogicalPos = true;
      DriveStatus = DS_SEEKING_LOGICAL2;
+    }
+    else if (DriveStatus != DS_SEEKING_LOGICAL){
+      switch(DriveStatus){
+        case DS_PAUSED:
+     MDFN_Notify(MDFN_NOTICE_STATUS, _("DS_PAUSED"));
+     Change_speed(1);
+        break;
+        case DS_PLAYING:
+     MDFN_Notify(MDFN_NOTICE_STATUS, _("DS_PLAYING"));
+        break;
+
+        case DS_READING:
+     MDFN_Notify(MDFN_NOTICE_STATUS, _("DS_READING"));
+        break;
+
+        case DS_SEEKING:
+     MDFN_Notify(MDFN_NOTICE_STATUS, _("DS_SEEKING"));
+        break;
+
+        case DS_STOPPED:
+     MDFN_Notify(MDFN_NOTICE_STATUS, _("DS_STOPPED"));
+        break;
+
+        case DS_STANDBY:
+     MDFN_Notify(MDFN_NOTICE_STATUS, _("DS_STANDBY"));
+        break;
+
+      }
     }
     //
     //

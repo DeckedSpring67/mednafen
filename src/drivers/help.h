@@ -6,5 +6,6 @@ bool Help_IsActive(void);
 bool Help_Toggle(void);
 void Help_Init(void) MDFN_COLD;
 void Help_Close(void) MDFN_COLD;
+void Change_speed(double);
 
 #endif

@@ -19,6 +19,11 @@
 
 static bool IsActive;
 
+//This is so bad I want to vomit
+void Change_speed(double speed){
+	RefreshThrottleFPS(speed);
+}
+
 void Help_Draw(MDFN_Surface* surface, const MDFN_Rect& rect)
 {
  if(!IsActive) return;
