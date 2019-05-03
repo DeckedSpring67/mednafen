@@ -296,6 +296,7 @@ void PS_CDC::StateAction(StateMem *sm, const unsigned load, const bool data_only
 
 
   SFVAR(FilterFile),
+  SFVAR(FilterChan),
 
 
   SFVAR(PendingCommand),
@@ -1114,21 +1115,20 @@ void PS_CDC::HandlePlayRead(void)
 
  //PSRCounter += 33868800 / (75 * ((Mode & MODE_SPEED) ? 2 : 1));
  
- PSRCounter = 8064;
-
  //Brought from beetle
-  PSRCounter = 8064;
-     PSRCounter = 33868800 / (75 * 14);
-     if (Mode & MODE_SPEED){
-      if(Mode & (MODE_CDDA | MODE_STRSND)){
-       Change_speed(1);
-       PSRCounter = 33868800 / (75*2); 
-      }
-      else{
-       //PSRCounter = 8064;
-       PSRCounter = 33868800 / (75 * 14);
-   }
+ PSRCounter = 33868800 / (75 * 14);
+ if (Mode & MODE_SPEED){
+  if(Mode & (MODE_CDDA | MODE_STRSND)){
+    Change_speed(1);
+    PSRCounter = 33868800 / (75*2); 
   }
+  else{
+    //PSRCounter = 8064;
+    PSRCounter = 33868800 / (75 * 14);
+  }
+ }else{
+   PSRCounter = 33868800 / 75;
+ }
 
 
  if(DriveStatus == DS_PLAYING)
@@ -1157,6 +1157,14 @@ void PS_CDC::HandlePlayRead(void)
  }
  else
   SectorsRead++;
+}
+
+//TODO delete global variable
+int ds_cycles_count = 0;
+int ds_seeking_count = 0;
+
+void *HandleCycles(int DriveStatus){
+
 }
 
 pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
@@ -1254,42 +1262,42 @@ pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
     }
     else if(DriveStatus == DS_SEEKING_LOGICAL)
     {
-     CurSector = SeekTarget;
+      ds_cycles_count = 0;
+      ds_seeking_count++;
+      CurSector = SeekTarget;
      
-     MDFN_Notify(MDFN_NOTICE_STATUS, _("Loading"));
-     Change_speed(4);
+      MDFN_Notify(MDFN_NOTICE_STATUS, _("DS_LOGICAL %d"),ds_seeking_count);
+      if(ds_seeking_count > 5)
+        Change_speed(10);
      
-     HoldLogicalPos = true;
-     DriveStatus = DS_SEEKING_LOGICAL2;
+      HoldLogicalPos = true;
+      DriveStatus = DS_SEEKING_LOGICAL2;
     }
-    else if (DriveStatus != DS_SEEKING_LOGICAL){
-      switch(DriveStatus){
-        case DS_PAUSED:
-     MDFN_Notify(MDFN_NOTICE_STATUS, _("DS_PAUSED"));
-     Change_speed(1);
-        break;
-        case DS_PLAYING:
-     MDFN_Notify(MDFN_NOTICE_STATUS, _("DS_PLAYING"));
-        break;
-
-        case DS_READING:
-     MDFN_Notify(MDFN_NOTICE_STATUS, _("DS_READING"));
-        break;
-
-        case DS_SEEKING:
-     MDFN_Notify(MDFN_NOTICE_STATUS, _("DS_SEEKING"));
-        break;
-
-        case DS_STOPPED:
-     MDFN_Notify(MDFN_NOTICE_STATUS, _("DS_STOPPED"));
-        break;
-
-        case DS_STANDBY:
-     MDFN_Notify(MDFN_NOTICE_STATUS, _("DS_STANDBY"));
-        break;
-
+    else{
+      if (DriveStatus != DS_SEEKING_LOGICAL){
+        ds_cycles_count++;
+        //MDFN_Notify(MDFN_NOTICE_STATUS, _("Cycles passed within last load: %d"),ds_cycles_count);
+        if(ds_cycles_count > 400){
+          Change_speed(1);
+          ds_seeking_count =0;
+        }
+        /*
+        switch(DriveStatus){
+          //Apparently the game is playable when the disc is pased, to ensure that the game is not too spiky we trigger the 
+          //Change of speed on the emulator every 150th time it detects that the disc is paused.
+          case DS_PAUSED:
+            //Lol this works
+            ds_paused_count++;
+           //MDFN_Notify(MDFN_NOTICE_STATUS, _("DS_PAUSED times: %d"),ds_paused_count);
+           if(ds_paused_count > 220){
+             Change_speed(1);
+             ds_paused_count =0;
+             ds_seeking_count =0;
+           }
+          break;
+        }*/
       }
-    }
+    } 
     //
     //
     //
