@@ -888,6 +888,7 @@ void PS_CDC::EnbufferizeCDDASector(const uint8 *buf)
 }
 
 int emu_speed=1;
+int was_big_seek = 0;
 
 void PS_CDC::HandlePlayRead(void)
 {
@@ -1124,6 +1125,7 @@ void PS_CDC::HandlePlayRead(void)
     if(emu_speed != 1){
       Change_speed(1);
       emu_speed = 1;
+      was_big_seek = 0;
     }
     PSRCounter = 33868800 / (75*2); 
   }
@@ -1166,7 +1168,6 @@ void PS_CDC::HandlePlayRead(void)
 //TODO can we do it without global variables?
 int ds_cycles_count = 0;
 int ds_seeking_count = 0;
-int was_big_seek = 0;
 
 pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
 {
@@ -1288,6 +1289,7 @@ pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
             emu_speed = 1;
             Change_speed(emu_speed);
             ds_seeking_count = 0;
+            was_big_seek = 0;
           }
         }
         //MDFN_Notify(MDFN_NOTICE_STATUS, _("Cycles passed within last load: %d"),ds_cycles_count);
@@ -1783,11 +1785,12 @@ int32 PS_CDC::CalcSeekTime(int32 initial, int32 target, bool motor_on, bool paus
   //MDFN_Notify(MDFN_NOTICE_WARNING, _("SeekTime: %d"),ret);
   //Check if the seek was big enough to speed up, then if there are 2 small seek subsequent to the small seek we speedup those aswell
  if(ret > 2500000){
-   was_big_seek = 2;
+   was_big_seek = 3;
    emu_speed = 15;
  }
  else if (was_big_seek){
    emu_speed = 15;
+   MDFN_Notify(MDFN_NOTICE_ERROR, _("was_big_seek %d"),was_big_seek);
    (was_big_seek > 0 ? was_big_seek-- : was_big_seek = 0);
  }
  else{

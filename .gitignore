@@ -1,0 +1,8 @@
+*.o
+*.deps
+*.dirstamp
+*Makefile*
+.vscode
+.config
+*.a
+*config*
