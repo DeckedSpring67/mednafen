@@ -1780,7 +1780,7 @@ int32 PS_CDC::CalcSeekTime(int32 initial, int32 target, bool motor_on, bool paus
 
  PSX_DBG(PSX_DBG_SPARSE, "[CDC] CalcSeekTime() %d->%d = %d\n", initial, target, ret);
  //Probably not a good Idea to put this here but w/e
-  MDFN_Notify(MDFN_NOTICE_WARNING, _("SeekTime: %d"),ret);
+  //MDFN_Notify(MDFN_NOTICE_WARNING, _("SeekTime: %d"),ret);
   //Check if the seek was big enough to speed up, then if there are 2 small seek subsequent to the small seek we speedup those aswell
  if(ret > 2500000){
    was_big_seek = 2;
