@@ -887,6 +887,8 @@ void PS_CDC::EnbufferizeCDDASector(const uint8 *buf)
 	ab->ReadPos = 0;
 }
 
+int emu_speed=1;
+
 void PS_CDC::HandlePlayRead(void)
 {
  uint8 read_buf[2352 + 96];
@@ -1119,11 +1121,13 @@ void PS_CDC::HandlePlayRead(void)
  PSRCounter = 33868800 / (75 * 14);
  if (Mode & MODE_SPEED){
   if(Mode & (MODE_CDDA | MODE_STRSND)){
-    Change_speed(1);
+    if(emu_speed != 1){
+      Change_speed(1);
+      emu_speed = 1;
+    }
     PSRCounter = 33868800 / (75*2); 
   }
   else{
-    //PSRCounter = 8064;
     PSRCounter = 33868800 / (75 * 14);
   }
  }else{
@@ -1159,17 +1163,15 @@ void PS_CDC::HandlePlayRead(void)
   SectorsRead++;
 }
 
-//TODO delete global variable
+//TODO can we do it without global variables?
 int ds_cycles_count = 0;
 int ds_seeking_count = 0;
-
-void *HandleCycles(int DriveStatus){
-
-}
+int was_big_seek = 0;
 
 pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
 {
  int32 clocks = timestamp - lastts;
+
 
  if(!Cur_CDIF)
  {
@@ -1222,11 +1224,14 @@ pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
    {
     SeekTarget = CurSector;
     HoldLogicalPos = false;
-    DriveStatus = DS_PAUSED;	// or is it supposed to be DS_STANDBY?
+    //DriveStatus = DS_PAUSED;	// or is it supposed to be DS_STANDBY?
+    DriveStatus = DS_STANDBY;	
    }
   }
 
-  //MDFN_DispMessage("%02x %d -- %d %d -- %02x", IRQBuffer, CDCReadyReceiveCounter, PSRCounter, PendingCommandCounter, PendingCommand);
+  //MDFN_DispMessage("%02x %d -- %d %d -- %02x", IRQBuffer, CDCReadyReceiveCounter, PSRCounter, PendingCommandCounter, PendingCommand )
+
+
 
   if(!(IRQBuffer & 0xF))
   {
@@ -1262,25 +1267,34 @@ pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
     }
     else if(DriveStatus == DS_SEEKING_LOGICAL)
     {
-      ds_cycles_count = 0;
-      ds_seeking_count++;
       CurSector = SeekTarget;
-     
-      MDFN_Notify(MDFN_NOTICE_STATUS, _("DS_LOGICAL %d"),ds_seeking_count);
-      if(ds_seeking_count > 5)
-        Change_speed(10);
+      ds_seeking_count++;
+      ds_cycles_count = 0;
+      //We trigger the speedup only if there are more than 3 seeks (need to be equal or more than the subsequent seeks), that way we're sure that it's not causing any ingame problems
+      if(ds_seeking_count > 2){
+        Change_speed(emu_speed);
+      }
      
       HoldLogicalPos = true;
       DriveStatus = DS_SEEKING_LOGICAL2;
     }
     else{
+      //IF we're not loading anymore then wait some cycles to be sure we're not loading and then resume the emu normally
       if (DriveStatus != DS_SEEKING_LOGICAL){
         ds_cycles_count++;
-        //MDFN_Notify(MDFN_NOTICE_STATUS, _("Cycles passed within last load: %d"),ds_cycles_count);
-        if(ds_cycles_count > 400){
-          Change_speed(1);
-          ds_seeking_count =0;
+        //  300 cycles seems like a good approximation to see if we're in gameplay :^)
+        if(ds_cycles_count > 300){
+          if(emu_speed != 1){
+            emu_speed = 1;
+            Change_speed(emu_speed);
+            ds_seeking_count = 0;
+          }
         }
+        //MDFN_Notify(MDFN_NOTICE_STATUS, _("Cycles passed within last load: %d"),ds_cycles_count);
+        //if(ds_cycles_count > 400){
+        //  Change_speed(1);
+        //  ds_seeking_count =0;
+        //}
         /*
         switch(DriveStatus){
           //Apparently the game is playable when the disc is pased, to ensure that the game is not too spiky we trigger the 
@@ -1765,7 +1779,24 @@ int32 PS_CDC::CalcSeekTime(int32 initial, int32 target, bool motor_on, bool paus
  ret += PSX_GetRandU32(0, 25000);
 
  PSX_DBG(PSX_DBG_SPARSE, "[CDC] CalcSeekTime() %d->%d = %d\n", initial, target, ret);
-
+ //Probably not a good Idea to put this here but w/e
+  MDFN_Notify(MDFN_NOTICE_WARNING, _("SeekTime: %d"),ret);
+  //Check if the seek was big enough to speed up, then if there are 2 small seek subsequent to the small seek we speedup those aswell
+ if(ret > 2500000){
+   was_big_seek = 2;
+   emu_speed = 15;
+ }
+ else if (was_big_seek){
+   emu_speed = 15;
+   (was_big_seek > 0 ? was_big_seek-- : was_big_seek = 0);
+ }
+ else{
+   if(emu_speed != 1){
+    was_big_seek = 0;
+    Change_speed(1);
+    emu_speed = 1;
+   }
+ }
  return(ret);
 }
 
@@ -1836,7 +1867,8 @@ int32 PS_CDC::Command_Play(const int arg_count, const uint8 *args)
   PSX_WARNING("[CDC] Play track: %d", track);
 
   SeekTarget = toc.tracks[track].lba;
-  PSRCounter = CalcSeekTime(CurSector, SeekTarget, DriveStatus != DS_STOPPED, DriveStatus == DS_PAUSED);
+  PSRCounter = CalcSeekTime(CurSector, SeekTarget, DriveStatus != DS_STOPPED, DriveStatus == DS_PAUSED); MDFN_Notify(MDFN_NOTICE_WARNING, _("SeekTime: %d"),PSRCounter);
+ 
   HeaderBufValid = false;
   PreSeekHack(SeekTarget);
 
@@ -2301,9 +2333,11 @@ int32 PS_CDC::Command_SeekL(const int arg_count, const uint8 *args)
  SectorPipe_Pos = SectorPipe_In = 0;
 #endif
  PSRCounter = CalcSeekTime(CurSector, SeekTarget, DriveStatus != DS_STOPPED, DriveStatus == DS_PAUSED);
+
  //HeaderBufValid = false;
  PreSeekHack(SeekTarget);
  SeekFinished = false;
+ 
  DriveStatus = DS_SEEKING_LOGICAL;
  StatusAfterSeek = DS_STANDBY;
  ClearAIP();
@@ -2322,6 +2356,7 @@ int32 PS_CDC::Command_SeekP(const int arg_count, const uint8 *args)
  SeekTarget = CommandLoc;
 
  PSRCounter = CalcSeekTime(CurSector, SeekTarget, DriveStatus != DS_STOPPED, DriveStatus == DS_PAUSED);
+
  HeaderBufValid = false;
  PreSeekHack(SeekTarget);
  SeekFinished = false;
