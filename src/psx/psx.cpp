@@ -2267,6 +2267,7 @@ static const MDFNSetting PSXSettings[] =
 
  { "psx.slstart", MDFNSF_NOFLAGS, gettext_noop("First displayed scanline in NTSC mode."), NULL, MDFNST_INT, "0", "0", "239" },
  { "psx.slend", MDFNSF_NOFLAGS, gettext_noop("Last displayed scanline in NTSC mode."), NULL, MDFNST_INT, "239", "0", "239" },
+ {  "psx.disc_speed", MDFNSF_NOFLAGS, gettext_noop("CD Speed, use 6x for Crash 3 or other games if they crash"), NULL, MDFNST_INT, "14"},
 
  { "psx.slstartp", MDFNSF_NOFLAGS, gettext_noop("First displayed scanline in PAL mode."), NULL, MDFNST_INT, "0", "0", "287" },	// 14
  { "psx.slendp", MDFNSF_NOFLAGS, gettext_noop("Last displayed scanline in PAL mode."), NULL, MDFNST_INT, "287", "0", "287" },	// 275

@@ -888,6 +888,8 @@ void PS_CDC::EnbufferizeCDDASector(const uint8 *buf)
 }
 
 int emu_speed=1;
+int was_big_seek = 0;
+int ds_seeking_count = 0;
 
 void PS_CDC::HandlePlayRead(void)
 {
@@ -1115,25 +1117,29 @@ void PS_CDC::HandlePlayRead(void)
  SectorPipe_Pos = (SectorPipe_Pos + 1) % SectorPipe_Count;
  SectorPipe_In++;
 
- //PSRCounter += 33868800 / (75 * ((Mode & MODE_SPEED) ? 2 : 1));
- 
+ int speedup = 1;
  //Brought from beetle
- PSRCounter = 33868800 / (75 * 14);
  if (Mode & MODE_SPEED){
   if(Mode & (MODE_CDDA | MODE_STRSND)){
+    //Streaming audio
     if(emu_speed != 1){
       Change_speed(1);
       emu_speed = 1;
     }
-    PSRCounter = 33868800 / (75*2); 
+    was_big_seek = 0;
+    ds_seeking_count = 0;
+    speedup = 2; 
   }
   else{
-    PSRCounter = 33868800 / (75 * 14);
+    //PSRCounter = 33868800 / (75 * 21);
+    speedup = MDFN_GetSettingI("psx.disc_speed") ;
   }
- }else{
-   PSRCounter = 33868800 / 75;
+ }
+ else{
+   speedup = 1;
  }
 
+ PSRCounter += 33868800 / 75 / speedup;
 
  if(DriveStatus == DS_PLAYING)
  {
@@ -1165,8 +1171,6 @@ void PS_CDC::HandlePlayRead(void)
 
 //TODO can we do it without global variables?
 int ds_cycles_count = 0;
-int ds_seeking_count = 0;
-int was_big_seek = 0;
 
 pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
 {
@@ -1271,7 +1275,8 @@ pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
       ds_seeking_count++;
       ds_cycles_count = 0;
       //We trigger the speedup only if there are more than 3 seeks (need to be equal or more than the subsequent seeks), that way we're sure that it's not causing any ingame problems
-      if(ds_seeking_count > 2){
+      if(ds_seeking_count > 2 && emu_speed != 1){
+        MDFN_Notify(MDFN_NOTICE_ERROR,_("Speedup by %d!"),emu_speed);
         Change_speed(emu_speed);
       }
      
@@ -1282,12 +1287,13 @@ pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
       //IF we're not loading anymore then wait some cycles to be sure we're not loading and then resume the emu normally
       if (DriveStatus != DS_SEEKING_LOGICAL){
         ds_cycles_count++;
-        //  300 cycles seems like a good approximation to see if we're in gameplay :^)
-        if(ds_cycles_count > 300){
+        //  666 cycles seems like a good approximation to see if we're in gameplay :^)
+        if(ds_cycles_count > 666){
           if(emu_speed != 1){
             emu_speed = 1;
             Change_speed(emu_speed);
             ds_seeking_count = 0;
+            was_big_seek = 0;
           }
         }
         //MDFN_Notify(MDFN_NOTICE_STATUS, _("Cycles passed within last load: %d"),ds_cycles_count);
@@ -1780,18 +1786,15 @@ int32 PS_CDC::CalcSeekTime(int32 initial, int32 target, bool motor_on, bool paus
 
  PSX_DBG(PSX_DBG_SPARSE, "[CDC] CalcSeekTime() %d->%d = %d\n", initial, target, ret);
  //Probably not a good Idea to put this here but w/e
-  //MDFN_Notify(MDFN_NOTICE_WARNING, _("SeekTime: %d"),ret);
-  //Check if the seek was big enough to speed up, then if there are 2 small seek subsequent to the small seek we speedup those aswell
- if(ret > 2500000){
-   was_big_seek = 2;
+ MDFN_Notify(MDFN_NOTICE_WARNING, _("SeekTime: %d was_big_seek: %d"),ret,was_big_seek);
+  //Check if the seek was big enough to speed up, then if there are 3 small seek subsequent to the small seek we speedup those aswell
+ if(ret > 10500000){
+   was_big_seek = 3;
    emu_speed = 15;
  }
  else if (was_big_seek){
    emu_speed = 15;
-<<<<<<< HEAD
    //MDFN_Notify(MDFN_NOTICE_ERROR, _("was_big_seek %d"),was_big_seek);
-=======
->>>>>>> parent of 7ce0145... Polished algorithm and added gitignore
    (was_big_seek > 0 ? was_big_seek-- : was_big_seek = 0);
  }
  else{
