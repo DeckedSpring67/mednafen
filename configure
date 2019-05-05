@@ -141,6 +141,7 @@ export LANGUAGE
 # works around shells that cannot unset nonexistent variables.
 # Preserve -v and -x to the replacement shell.
 BASH_ENV=/dev/null
+
 ENV=/dev/null
 (unset BASH_ENV) >/dev/null 2>&1 && unset BASH_ENV ENV
 case $- in # ((((
