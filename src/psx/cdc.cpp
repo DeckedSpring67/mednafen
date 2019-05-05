@@ -1276,7 +1276,7 @@ pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
       ds_cycles_count = 0;
       //We trigger the speedup only if there are more than 3 seeks (need to be equal or more than the subsequent seeks), that way we're sure that it's not causing any ingame problems
       if(ds_seeking_count > 2 && emu_speed != 1){
-        MDFN_Notify(MDFN_NOTICE_ERROR,_("Speedup by %d!"),emu_speed);
+        //MDFN_Notify(MDFN_NOTICE_ERROR,_("Speedup by %d!"),emu_speed);
         Change_speed(emu_speed);
       }
      
@@ -1287,8 +1287,8 @@ pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
       //IF we're not loading anymore then wait some cycles to be sure we're not loading and then resume the emu normally
       if (DriveStatus != DS_SEEKING_LOGICAL){
         ds_cycles_count++;
-        //  666 cycles seems like a good approximation to see if we're in gameplay :^)
-        if(ds_cycles_count > 666){
+        //  400 cycles seems like a good approximation to see if we're in gameplay :^)
+        if(ds_cycles_count > MDFN_GetSettingI("psx.resume_cycles")){
           if(emu_speed != 1){
             emu_speed = 1;
             Change_speed(emu_speed);
@@ -1786,14 +1786,14 @@ int32 PS_CDC::CalcSeekTime(int32 initial, int32 target, bool motor_on, bool paus
 
  PSX_DBG(PSX_DBG_SPARSE, "[CDC] CalcSeekTime() %d->%d = %d\n", initial, target, ret);
  //Probably not a good Idea to put this here but w/e
- MDFN_Notify(MDFN_NOTICE_WARNING, _("SeekTime: %d was_big_seek: %d"),ret,was_big_seek);
+ //MDFN_Notify(MDFN_NOTICE_WARNING, _("SeekTime: %d was_big_seek: %d"),ret,was_big_seek);
   //Check if the seek was big enough to speed up, then if there are 3 small seek subsequent to the small seek we speedup those aswell
  if(ret > 10500000){
    was_big_seek = 3;
-   emu_speed = 15;
+   emu_speed = MDFN_GetSettingI("psx.loading_fforward");
  }
  else if (was_big_seek){
-   emu_speed = 15;
+   emu_speed = MDFN_GetSettingI("psx.loading_fforward");
    //MDFN_Notify(MDFN_NOTICE_ERROR, _("was_big_seek %d"),was_big_seek);
    (was_big_seek > 0 ? was_big_seek-- : was_big_seek = 0);
  }

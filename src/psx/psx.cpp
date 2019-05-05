@@ -2267,7 +2267,9 @@ static const MDFNSetting PSXSettings[] =
 
  { "psx.slstart", MDFNSF_NOFLAGS, gettext_noop("First displayed scanline in NTSC mode."), NULL, MDFNST_INT, "0", "0", "239" },
  { "psx.slend", MDFNSF_NOFLAGS, gettext_noop("Last displayed scanline in NTSC mode."), NULL, MDFNST_INT, "239", "0", "239" },
- {  "psx.disc_speed", MDFNSF_NOFLAGS, gettext_noop("CD Speed, use 6x for Crash 3 or other games if they crash"), NULL, MDFNST_INT, "14"},
+ { "psx.disc_speed", MDFNSF_NOFLAGS, gettext_noop("CD Speed, use 6x for Crash 3 or other games if they crash"), NULL, MDFNST_INT, "14"},
+ { "psx.resume_cycles", MDFNSF_NOFLAGS, gettext_noop("CD non-seeking cycles that determine when we should stop fast forwaring"), NULL, MDFNST_INT, "400" },
+ { "psx.loading_fforward", MDFNSF_NOFLAGS, gettext_noop("Fast Forward speed when a loading is detected"), NULL, MDFNST_INT, "15"},
 
  { "psx.slstartp", MDFNSF_NOFLAGS, gettext_noop("First displayed scanline in PAL mode."), NULL, MDFNST_INT, "0", "0", "287" },	// 14
  { "psx.slendp", MDFNSF_NOFLAGS, gettext_noop("Last displayed scanline in PAL mode."), NULL, MDFNST_INT, "287", "0", "287" },	// 275
