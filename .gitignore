@@ -6,3 +6,7 @@
 .config
 *.a
 *config*
+include/minilzo/
+include/stamp-h1
+include/trio
+po/POTFILES

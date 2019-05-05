@@ -1790,7 +1790,7 @@ int32 PS_CDC::CalcSeekTime(int32 initial, int32 target, bool motor_on, bool paus
  }
  else if (was_big_seek){
    emu_speed = 15;
-   MDFN_Notify(MDFN_NOTICE_ERROR, _("was_big_seek %d"),was_big_seek);
+   //MDFN_Notify(MDFN_NOTICE_ERROR, _("was_big_seek %d"),was_big_seek);
    (was_big_seek > 0 ? was_big_seek-- : was_big_seek = 0);
  }
  else{

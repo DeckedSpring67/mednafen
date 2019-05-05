@@ -12160,7 +12160,7 @@ $as_echo "#define HAVE_LC_MESSAGES 1" >>confdefs.h
   fi
 
 
-                if test "$enable_shared" = yes; then
+if test "$enable_shared" = yes; then
     case "$host_os" in
       mingw* | cygwin*) is_woe32dll=yes ;;
       *) is_woe32dll=no ;;
@@ -16096,7 +16096,7 @@ fi
 if test "${enable_apple2+set}" = set; then :
   enableval=$enable_apple2;
 else
-  enable_apple2=yes
+  enable_apple2=no
 fi
 
 
@@ -16118,7 +16118,7 @@ fi
 if test "${enable_gb+set}" = set; then :
   enableval=$enable_gb;
 else
-  enable_gb=yes
+  enable_gb=no
 fi
 
 
@@ -16156,7 +16156,7 @@ fi
 if test "${enable_gba+set}" = set; then :
   enableval=$enable_gba;
 else
-  enable_gba=yes
+  enable_gba=no
 fi
 
 
@@ -16194,7 +16194,7 @@ fi
 if test "${enable_lynx+set}" = set; then :
   enableval=$enable_lynx;
 else
-  enable_lynx=yes
+  enable_lynx=no
 fi
 
 
@@ -16224,7 +16224,7 @@ fi
 if test "${enable_md+set}" = set; then :
   enableval=$enable_md;
 else
-  enable_md=yes
+  enable_md=no
 fi
 
 
@@ -16286,7 +16286,7 @@ fi
 if test "${enable_nes+set}" = set; then :
   enableval=$enable_nes;
 else
-  enable_nes=yes
+  enable_nes=no
 fi
 
 
@@ -16317,7 +16317,7 @@ fi
 if test "${enable_ngp+set}" = set; then :
   enableval=$enable_ngp;
 else
-  enable_ngp=yes
+  enable_ngp=no
 fi
 
 
@@ -16355,7 +16355,7 @@ fi
 if test "${enable_pce+set}" = set; then :
   enableval=$enable_pce;
 else
-  enable_pce=yes
+  enable_pce=no
 fi
 
 
@@ -16401,7 +16401,7 @@ fi
 if test "${enable_pce_fast+set}" = set; then :
   enableval=$enable_pce_fast;
 else
-  enable_pce_fast=yes
+  enable_pce_fast=no
 fi
 
 
@@ -16439,7 +16439,7 @@ fi
 if test "${enable_pcfx+set}" = set; then :
   enableval=$enable_pcfx;
 else
-  enable_pcfx=yes
+  enable_pcfx=no
 fi
 
 
@@ -16507,7 +16507,7 @@ fi
 if test "${enable_sms+set}" = set; then :
   enableval=$enable_sms;
 else
-  enable_sms=yes
+  enable_sms=no
 fi
 
 
@@ -16561,7 +16561,7 @@ fi
 if test "${enable_snes+set}" = set; then :
   enableval=$enable_snes;
 else
-  enable_snes=yes
+  enable_snes=no
 fi
 
 
@@ -16583,7 +16583,7 @@ fi
 if test "${enable_snes_faust+set}" = set; then :
   enableval=$enable_snes_faust;
 else
-  enable_snes_faust=yes
+  enable_snes_faust=no
 fi
 
 
@@ -16605,7 +16605,7 @@ fi
 if test "${enable_ss+set}" = set; then :
   enableval=$enable_ss;
 else
-  enable_ss="x86_64 amd64 aarch64* arm64* ppc64* powerpc64*"
+   enable_ss=no
 fi
 
 for i in $enable_ss; do case $host_cpu in $i) enable_ss=yes ;; esac; done
@@ -16636,7 +16636,7 @@ fi
 if test "${enable_ssfplay+set}" = set; then :
   enableval=$enable_ssfplay;
 else
-  enable_ssfplay=yes
+  enable_ssfplay=no
 fi
 
 
@@ -16666,7 +16666,7 @@ fi
 if test "${enable_vb+set}" = set; then :
   enableval=$enable_vb;
 else
-  enable_vb=yes
+  enable_vb=no
 fi
 
 
@@ -16705,7 +16705,7 @@ fi
 if test "${enable_wswan+set}" = set; then :
   enableval=$enable_wswan;
 else
-  enable_wswan=yes
+  enable_wswan=no
 fi
 
 
