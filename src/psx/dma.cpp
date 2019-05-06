@@ -26,6 +26,8 @@
 #include "cdc.h"
 #include "spu.h"
 
+
+
 /* Notes:
 
  Channel 4(SPU):
@@ -58,6 +60,7 @@ enum
 namespace MDFN_IEN_PSX
 {
 
+//I don't know why I need this here but I do
 static int32 DMACycleCounter;
 
 static uint32 DMAControl;
@@ -573,6 +576,8 @@ static INLINE int32 CalcNextEvent(int32 next_event)
  if(DMACycleCounter < next_event)
   next_event = DMACycleCounter;
 
+overclock_device_to_cpu(next_event);
+
  return(next_event);
 }
 
@@ -580,6 +585,9 @@ MDFN_FASTCALL pscpu_timestamp_t DMA_Update(const pscpu_timestamp_t timestamp)
 {
 //   uint32 dc = (DMAControl >> (ch * 4)) & 0xF;
  int32 clocks = timestamp - lastts;
+
+ overclock_cpu_to_device(clocks);
+
  lastts = timestamp;
 
  GPU_Update(timestamp);

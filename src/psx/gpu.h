@@ -171,7 +171,7 @@ struct PS_GPU
  //
  //
  uint64 GPUClockCounter;
- uint32 GPUClockRatio;
+ int32 GPUClockRatio;
  uint32 LinesPerField;
  uint32 scanline;
  uint32 DotClockCounter;
@@ -218,6 +218,8 @@ struct PS_GPU
  void GPU_StateAction(StateMem *sm, const unsigned load, const bool data_only);
 
  void GPU_ResetTS(void);
+
+ void GPU_RecalcClockRatio(void);
 
  void GPU_StartFrame(EmulateSpecStruct *espec);
 

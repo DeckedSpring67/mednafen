@@ -352,6 +352,8 @@ pscpu_timestamp_t FrontIO::CalcNextEventTS(pscpu_timestamp_t timestamp, int32 ne
   if(dsr_pulse_delay[i] > 0 && next_event > dsr_pulse_delay[i])
    next_event = dsr_pulse_delay[i];
 
+  overclock_device_to_cpu(next_event);
+
  ret = timestamp + next_event;
 
  if(irq10_pulse_ts[0] < ret)
@@ -582,6 +584,7 @@ uint32 FrontIO::Read(pscpu_timestamp_t timestamp, uint32 A)
 pscpu_timestamp_t FrontIO::Update(pscpu_timestamp_t timestamp)
 {
  int32 clocks = timestamp - lastts;
+ overclock_cpu_to_device(clocks);
  bool need_start_stop_check = false;
 
  for(int i = 0; i < 4; i++)
@@ -590,7 +593,12 @@ pscpu_timestamp_t FrontIO::Update(pscpu_timestamp_t timestamp)
    dsr_pulse_delay[i] -= clocks;
    if(dsr_pulse_delay[i] <= 0)
    {
-    dsr_active_until_ts[i] = timestamp + 32 + dsr_pulse_delay[i];
+    //dsr_active_until_ts[i] = timestamp + 32 + dsr_pulse_delay[i];
+    int32_t off = 32 + dsr_pulse_delay[i];
+
+    overclock_device_to_cpu(off);
+
+    dsr_active_until_ts[i] = timestamp + off;
     DoDSRIRQ();
    }
   }

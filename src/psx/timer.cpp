@@ -104,7 +104,7 @@ static pscpu_timestamp_t lastts;
 
 static uint32 CalcNextEvent(void)
 {
- uint32 next_event = 1024;	//
+ int32_t next_event = 1024;	//
 
  for(unsigned i = 0; i < 3; i++)
  {
@@ -143,6 +143,8 @@ static uint32 CalcNextEvent(void)
   if(next_event > tmp_clocks)
    next_event = tmp_clocks;
  }
+
+ overclock_device_to_cpu(next_event);
 
  return(next_event);
 }
@@ -328,6 +330,8 @@ void TIMER_ClockHRetrace(void)
 MDFN_FASTCALL pscpu_timestamp_t TIMER_Update(const pscpu_timestamp_t timestamp)
 {
  int32 cpu_clocks = timestamp - lastts;
+
+ overclock_cpu_to_device(cpu_clocks); 
 
  for(int i = 0; i < 3; i++)
  {

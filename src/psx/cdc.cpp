@@ -80,6 +80,9 @@ using namespace CDUtility;
 namespace MDFN_IEN_PSX
 {
 
+//I don't know why I need this here but I do
+int32_t psx_overclock_factor = 0;
+
 PS_CDC::PS_CDC() : DMABuffer(4096)
 {
  IsPSXDisc = false;
@@ -139,6 +142,8 @@ int32 PS_CDC::CalcNextEvent(void)
   next_event = DiscStartupDelay;
 
  //fprintf(stderr, "%d %d %d %d --- %d\n", PSRCounter, PendingCommandCounter, CDCReadyReceiveCounter, DiscStartupDelay, next_event);
+
+ overclock_device_to_cpu(next_event);
 
  return(next_event);
 }
@@ -1175,6 +1180,8 @@ int ds_cycles_count = 0;
 pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
 {
  int32 clocks = timestamp - lastts;
+
+ overclock_cpu_to_device(clocks);
 
 
  if(!Cur_CDIF)

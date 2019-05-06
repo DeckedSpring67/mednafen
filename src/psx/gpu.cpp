@@ -106,6 +106,7 @@ void GPU_Init(bool pal_clock_and_tv)
     DitherLUT[y][x][v] = value;
    }
 
+
  if(HardwarePALType == false)	// NTSC clock
  {
   GPUClockRatio = 103896; // 65536 * 53693181.818 / (44100 * 768)
@@ -116,12 +117,23 @@ void GPU_Init(bool pal_clock_and_tv)
   GPUClockRatio = 102948; // 65536 * 53203425 / (44100 * 768)
   hmc_to_visible = 560; 
  }
+ 
+ GPU_RecalcClockRatio();
 
  memcpy(&Commands[0x00], Commands_00_1F, sizeof(Commands_00_1F));
  memcpy(&Commands[0x20], Commands_20_3F, sizeof(Commands_20_3F));
  memcpy(&Commands[0x40], Commands_40_5F, sizeof(Commands_40_5F));
  memcpy(&Commands[0x60], Commands_60_7F, sizeof(Commands_60_7F));
  memcpy(&Commands[0x80], Commands_80_FF, sizeof(Commands_80_FF));
+}
+
+void GPU_RecalcClockRatio(void) {
+   if(GPU.HardwarePALType == false)  // NTSC clock
+      GPU.GPUClockRatio = 103896; // 65536 * 53693181.818 / (44100 * 768)
+   else  // PAL clock
+      GPU.GPUClockRatio = 102948; // 65536 * 53203425 / (44100 * 768)
+
+   overclock_cpu_to_device(GPU.GPUClockRatio);
 }
 
 void GPU_Kill(void)
