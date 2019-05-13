@@ -81,7 +81,7 @@ namespace MDFN_IEN_PSX
 {
 
 //I don't know why I need this here but I do
-int32_t psx_overclock_factor = 0;
+int32_t psx_overclock_factor = 256;
 
 PS_CDC::PS_CDC() : DMABuffer(4096)
 {
@@ -895,6 +895,7 @@ void PS_CDC::EnbufferizeCDDASector(const uint8 *buf)
 int emu_speed=1;
 int was_big_seek = 0;
 int ds_seeking_count = 0;
+int speedup = 1;
 
 void PS_CDC::HandlePlayRead(void)
 {
@@ -1122,7 +1123,6 @@ void PS_CDC::HandlePlayRead(void)
  SectorPipe_Pos = (SectorPipe_Pos + 1) % SectorPipe_Count;
  SectorPipe_In++;
 
- int speedup = 1;
  //Brought from beetle
  if (Mode & MODE_SPEED){
   if(Mode & (MODE_CDDA | MODE_STRSND)){
@@ -1137,13 +1137,14 @@ void PS_CDC::HandlePlayRead(void)
   }
   else{
     //PSRCounter = 33868800 / (75 * 21);
-    speedup = MDFN_GetSettingI("psx.disc_speed") ;
+    //speedup = MDFN_GetSettingI("psx.disc_speed") ;
+    speedup = 6;
   }
  }
  else{
+   //We're probably on 1x
    speedup = 1;
  }
-
  PSRCounter += 33868800 / 75 / speedup;
 
  if(DriveStatus == DS_PLAYING)
@@ -1180,9 +1181,7 @@ int ds_cycles_count = 0;
 pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
 {
  int32 clocks = timestamp - lastts;
-
  overclock_cpu_to_device(clocks);
-
 
  if(!Cur_CDIF)
  {
@@ -1235,8 +1234,8 @@ pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
    {
     SeekTarget = CurSector;
     HoldLogicalPos = false;
-    //DriveStatus = DS_PAUSED;	// or is it supposed to be DS_STANDBY?
-    DriveStatus = DS_STANDBY;	
+    DriveStatus = DS_PAUSED;	// or is it supposed to be DS_STANDBY?
+    //DriveStatus = DS_STANDBY;	
    }
   }
 
@@ -1273,7 +1272,7 @@ pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
      SeekFinished = true;
      ReportStartupDelay = 24000000;
 
-     PSRCounter = 33868800 / (75 * ((Mode & MODE_SPEED) ? 2 : 1));
+     PSRCounter = 33868800 / (75 * ((Mode & MODE_SPEED) ? MDFN_GetSettingI("psx.disc_speed") : 1));
      //MDFN_Notify(MDFN_NOTICE_STATUS, _("SEEKING"));
     }
     else if(DriveStatus == DS_SEEKING_LOGICAL)
@@ -1282,9 +1281,10 @@ pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
       ds_seeking_count++;
       ds_cycles_count = 0;
       //We trigger the speedup only if there are more than 3 seeks (need to be equal or more than the subsequent seeks), that way we're sure that it's not causing any ingame problems
-      if(ds_seeking_count > 2 && emu_speed != 1){
-        //MDFN_Notify(MDFN_NOTICE_ERROR,_("Speedup by %d!"),emu_speed);
+      if(emu_speed != 1 && ds_seeking_count > 3) {
+        MDFN_Notify(MDFN_NOTICE_ERROR,_("SPeedup!"));
         Change_speed(emu_speed);
+        speedup = MDFN_GetSettingI("psx.disc_speed");
       }
      
       HoldLogicalPos = true;
@@ -1294,8 +1294,9 @@ pscpu_timestamp_t PS_CDC::Update(const pscpu_timestamp_t timestamp)
       //IF we're not loading anymore then wait some cycles to be sure we're not loading and then resume the emu normally
       if (DriveStatus != DS_SEEKING_LOGICAL){
         ds_cycles_count++;
-        //  400 cycles seems like a good approximation to see if we're in gameplay :^)
-        if(ds_cycles_count > MDFN_GetSettingI("psx.resume_cycles")){
+        //400 cycles seems like a good approximation to see if we're in gameplay :^)
+        int resume_cycles = MDFN_GetSettingI("psx.resume_cycles");
+        if(ds_cycles_count > resume_cycles){
           if(emu_speed != 1){
             emu_speed = 1;
             Change_speed(emu_speed);
@@ -1793,15 +1794,18 @@ int32 PS_CDC::CalcSeekTime(int32 initial, int32 target, bool motor_on, bool paus
 
  PSX_DBG(PSX_DBG_SPARSE, "[CDC] CalcSeekTime() %d->%d = %d\n", initial, target, ret);
  //Probably not a good Idea to put this here but w/e
- //MDFN_Notify(MDFN_NOTICE_WARNING, _("SeekTime: %d was_big_seek: %d"),ret,was_big_seek);
-  //Check if the seek was big enough to speed up, then if there are 3 small seek subsequent to the small seek we speedup those aswell
- if(ret > 10500000){
+ int32 seek = ret;
+ //Check if the seek was big enough to speed up, then if there are 3 small seek subsequent to the small seek we speedup those aswell
+ //if(seek > ((33868800 / 75 / speedup) * 300) && (Mode & MODE_SPEED)){
+ if(seek > (speedup * 10500000) / 14 && (Mode & MODE_SPEED)){
    was_big_seek = 3;
    emu_speed = MDFN_GetSettingI("psx.loading_fforward");
+   speedup = MDFN_GetSettingI("psx.disc_speed");
  }
- else if (was_big_seek){
+ else if (was_big_seek && (Mode & MODE_SPEED)){
    emu_speed = MDFN_GetSettingI("psx.loading_fforward");
    //MDFN_Notify(MDFN_NOTICE_ERROR, _("was_big_seek %d"),was_big_seek);
+   speedup = MDFN_GetSettingI("psx.disc_speed");
    (was_big_seek > 0 ? was_big_seek-- : was_big_seek = 0);
  }
  else{
@@ -1809,6 +1813,7 @@ int32 PS_CDC::CalcSeekTime(int32 initial, int32 target, bool motor_on, bool paus
     was_big_seek = 0;
     Change_speed(1);
     emu_speed = 1;
+    speedup = 1;
    }
  }
  return(ret);
